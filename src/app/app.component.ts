@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { EditorState, EditorView, basicSetup } from '@codemirror/basic-setup';
-import { MySQL, PostgreSQL, sql } from '@codemirror/lang-sql';
+import { MySQL, PostgreSQL, sql, keywordCompletion, SQLDialect, StandardSQL } from '@codemirror/lang-sql';
 import { keymap } from '@codemirror/view';
 import { indentWithTab, selectSyntaxRight, selectGroupForward, selectLineBoundaryForward, selectParentSyntax } from '@codemirror/commands';
 import { Text } from '@codemirror/state';
@@ -8,6 +8,33 @@ import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { gutter } from '@codemirror/gutter';
 import { foldAll, unfoldAll, foldCode, foldedRanges } from '@codemirror/fold';
 import { syntaxTree, foldService, foldable, ensureSyntaxTree } from '@codemirror/language';
+import {CompletionContext} from "@codemirror/autocomplete";
+
+function myCompletions(context: CompletionContext) {
+  const baseAutoCompletionExtension: any = keywordCompletion(StandardSQL, true);
+  const baseAutoCompletion = baseAutoCompletionExtension.value.autocomplete(context);
+
+  if(!baseAutoCompletion) return { from: 0, options: [], span: null };
+
+  const newOptions = baseAutoCompletion.options.map((option: any) => {
+      if(option && (option.label === 'SELECT' || option.label === 'FROM')) {
+        return {
+          label: option.label,
+          type: option.type,
+          boost: 99
+        }
+      }
+
+      return option;
+    })
+
+  return {
+    from: baseAutoCompletion.from,
+    options: newOptions,
+    span: baseAutoCompletion.span
+  };
+}
+
 
 const sqlLang = sql({
   schema: {
@@ -46,6 +73,7 @@ export class AppComponent implements AfterViewInit {
             indentWithTab
           ]),
           sqlLang,
+          autocompletion({override: [myCompletions]}),
           gutter({class: "cm-mygutter"})
         ],
       }),
@@ -59,6 +87,8 @@ export class AppComponent implements AfterViewInit {
     const selection = this.view.state.sliceDoc(range.from, range.to);
     const line = this.view.state.doc.lineAt(range.from);
   
+
+
     const foldableRanges = this.getFoldedRanges();
   }
 
