@@ -26,3 +26,32 @@ Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To u
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
 # codemirror-6-example
+Angular Language servise
+Git History
+Git lens
+IntelliSense for CSS class names in HTML
+Prettier - Code fromatter
+
+
+{
+  "key": "cmd+space",
+  "command": "editor.action.triggerSuggest",
+  "when": "editorHasCompletionItemProvider && textInputFocus && !editorReadonly"
+}
+
+{
+  "key": "cmd+e",
+  "command": "workbench.action.quickOpen"
+}
+
+{
+  "key": "cmd+up",
+  "command": "editor.action.moveLinesUpAction",
+  "when": "editorTextFocus && !editorReadonly"
+}
+
+{
+  "key": "cmd+down",
+  "command": "editor.action.moveLinesDownAction",
+  "when": "editorTextFocus && !editorReadonly"
+}

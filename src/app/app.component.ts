@@ -1,74 +1,67 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { EditorState, EditorView, basicSetup } from '@codemirror/basic-setup';
-import { MySQL, PostgreSQL, sql, keywordCompletion, SQLDialect, StandardSQL, schemaCompletion } from '@codemirror/lang-sql';
-import { keymap } from '@codemirror/view';
+import { MySQL, PostgreSQL, MSSQL, sql, keywordCompletion, SQLDialect, StandardSQL, schemaCompletion } from '@codemirror/lang-sql';
+import { keymap, highlightSpecialChars, drawSelection, highlightActiveLine } from '@codemirror/view';
 import { indentWithTab, selectSyntaxRight, selectGroupForward, selectLineBoundaryForward, selectParentSyntax } from '@codemirror/commands';
 import { Text } from '@codemirror/state';
-import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
-import { gutter } from '@codemirror/gutter';
-import { foldAll, unfoldAll, foldCode, foldedRanges } from '@codemirror/fold';
-import { syntaxTree, foldService, foldable, ensureSyntaxTree } from '@codemirror/language';
-import {CompletionContext, currentCompletions} from "@codemirror/autocomplete";
+import { startCompletion, acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 
-function myCompletions(context: CompletionContext) {
-  const baseAutoCompletionExtension: any = keywordCompletion(StandardSQL, true);
-  const baseAutoCompletion = baseAutoCompletionExtension.value.autocomplete(context);
-  
-  const customAutoCompletionExtension: any = schemaCompletion({
-    schema: {
-      table1: [
-        {
-          label: 'col-1',
-          detail: 'Details',
-          info: 'Documentation',
-          type: 'column',
-        },
-      ],
+import { lineNumbers } from '@codemirror/gutter';
+import { history } from '@codemirror/history';
+import { foldAll, unfoldAll, foldCode, foldedRanges, foldGutter } from '@codemirror/fold';
+import { syntaxTree, foldService, foldable, ensureSyntaxTree, indentOnInput } from '@codemirror/language';
+import { defaultHighlightStyle, HighlightStyle } from '@codemirror/highlight';
+import { bracketMatching } from '@codemirror/matchbrackets';
+import { closeBrackets } from '@codemirror/closebrackets';
+import { CompletionContext, currentCompletions } from "@codemirror/autocomplete";
+import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
+import { ICompletion, query1 } from './queries';
+
+
+const WORDS = ['SELECT', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
+
+const customExt: any = schemaCompletion({
+  tables: [
+    {
+      label: 'table1',
+      detail: 'Table detail',
+      info: 'Table info',
+      type: 'table',
+      boost: 99
     }
-  });
-  const customAutoCompletion = customAutoCompletionExtension.value.autocomplete(context);
-
-  if(!baseAutoCompletion) return { from: 0, options: [], span: null };
-
-  const newOptions = baseAutoCompletion.options.map((option: any) => {
-      if(option && (option.label === 'SELECT' || option.label === 'FROM')) {
-        return {
-          label: option.label,
-          type: option.type,
-          boost: 99
-        }
-      }
-
-      return option;
-    });
-
-  newOptions.push(...customAutoCompletion.options);
-
-  return {
-    from: baseAutoCompletion.from,
-    options: newOptions,
-    span: baseAutoCompletion.span
-  };
-}
-
-
-const sqlLang = sql({
+  ],
   schema: {
     table1: [
       {
         label: 'col-1',
-        detail: 'Details',
-        info: 'Documentation',
+        detail: 'Column detail',
+        info: 'Column info',
         type: 'column',
+        boost: 99
       },
     ],
   },
-  upperCaseKeywords: true,
 });
 
-sqlLang.language.data.of({
-  autocompletion: myCompletions
-})
+function myCompletions(context: CompletionContext): any {
+  const baseExt: any = keywordCompletion(StandardSQL, true);
+  const base: ICompletion = baseExt.value.autocomplete(context);
+
+  const custom: ICompletion = customExt.value.autocomplete(context);
+
+  // console.log(base, custom);
+
+  if (base?.options) {
+    for (let i = 0; i < base.options.length; i++) {
+      if (WORDS.includes(base.options[i].label)) {
+        base.options[i].boost = 98;
+      }
+    }
+    base.options.push(...custom.options);
+    return base;
+  }
+  return custom;
+}
 
 @Component({
   selector: 'app-root',
@@ -76,6 +69,7 @@ sqlLang.language.data.of({
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements AfterViewInit {
+
   @ViewChild('texteditor') texteditor: any = null;
 
   view!: EditorView;
@@ -83,18 +77,40 @@ export class AppComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.view = new EditorView({
       state: EditorState.create({
+        doc: query1,
         extensions: [
-          basicSetup,
           keymap.of([
+            {
+              mac: 'Mod-Space',
+              run: startCompletion
+            },
             {
               key: 'Tab',
               run: acceptCompletion,
             },
             indentWithTab
           ]),
-          sqlLang,
-          autocompletion({override: [myCompletions]}),
-          gutter({class: "cm-mygutter"})
+          gutter({ class: "cm-mygutter" }),
+          autocompletion({ override: [myCompletions] }),
+          sql(),
+
+          basicSetup,
+
+          // lineNumbers(),
+
+          // history(),
+
+          // foldGutter(),
+
+          // indentOnInput(),
+
+          // defaultHighlightStyle.extension,
+
+          // bracketMatching(),
+          // closeBrackets(),
+
+          // highlightActiveLine(),
+          // highlightActiveLineGutter()
         ],
       }),
       parent: this.texteditor.nativeElement,
@@ -106,7 +122,7 @@ export class AppComponent implements AfterViewInit {
 
     const selection = this.view.state.sliceDoc(range.from, range.to);
     const line = this.view.state.doc.lineAt(range.from);
-  
+
     console.log(currentCompletions(this.view.state))
 
     const foldableRanges = this.getFoldedRanges();
@@ -117,7 +133,7 @@ export class AppComponent implements AfterViewInit {
 
     const foldableRanges = <any>[];
 
-    while(rangeSet.to !== rangeSet.from) {
+    while (rangeSet.to !== rangeSet.from) {
       const line = this.view.state.doc.lineAt(rangeSet.from);
 
       foldableRanges.push({
@@ -133,3 +149,5 @@ export class AppComponent implements AfterViewInit {
     return foldableRanges;
   }
 }
+
+

@@ -5,5 +5,12 @@
 
 .cm-mygutter {
     width: 5px;
-    background-color: green;
+    // background-color: green;
+}
+
+.cm-completionIcon-table:after {
+    content: 't';
+}
+.cm-completionIcon-column:after {
+    content: 'c';
 }
