@@ -10,12 +10,17 @@ import { lineNumbers } from '@codemirror/gutter';
 import { history } from '@codemirror/history';
 import { foldAll, unfoldAll, foldCode, foldedRanges, foldGutter } from '@codemirror/fold';
 import { syntaxTree, foldService, foldable, ensureSyntaxTree, indentOnInput } from '@codemirror/language';
-import { defaultHighlightStyle, HighlightStyle } from '@codemirror/highlight';
+import { defaultHighlightStyle, tags, HighlightStyle } from '@codemirror/highlight';
 import { bracketMatching } from '@codemirror/matchbrackets';
 import { closeBrackets } from '@codemirror/closebrackets';
 import { CompletionContext, currentCompletions } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
 import { ICompletion, query1 } from './queries';
+
+// const myHighlightStyle = HighlightStyle.define([
+//   { tag: tags.keyword, color: "#10ebd8" },
+//   { tag: tags.comment, color: "#f5d", fontStyle: "italic" }
+// ])
 
 
 const WORDS = ['SELECT', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
