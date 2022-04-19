@@ -49,6 +49,15 @@ const customExt: any = schemaCompletion({
 });
 
 function myCompletions(context: CompletionContext): any {
+  // let word = context.matchBefore(/\w*/);
+  // console.log(context.explicit, word);
+  // if ((word && word?.from == word?.to && !context.explicit)) {
+  //   return {
+  //     from: word?.from,
+  //     options: WORDS.map((w, i) => ({ label: w, type: "variable", boost: (-1 * i) }))
+  //   };
+  // }
+
   const baseExt: any = keywordCompletion(StandardSQL, true);
   const base: ICompletion = baseExt.value.autocomplete(context);
 
@@ -154,5 +163,3 @@ export class AppComponent implements AfterViewInit {
     return foldableRanges;
   }
 }
-
-
