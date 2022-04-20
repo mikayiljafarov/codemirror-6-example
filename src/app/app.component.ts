@@ -16,6 +16,7 @@ import { closeBrackets } from '@codemirror/closebrackets';
 import { CompletionContext, currentCompletions } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
 import { ICompletion, query1 } from './queries';
+import { timer } from 'rxjs';
 
 // const myHighlightStyle = HighlightStyle.define([
 //   { tag: tags.keyword, color: "#10ebd8" },
@@ -88,6 +89,8 @@ export class AppComponent implements AfterViewInit {
 
   view!: EditorView;
 
+  selection: { from: number, to: number }[] = [];
+
   ngAfterViewInit() {
     this.view = new EditorView({
       state: EditorState.create({
@@ -109,6 +112,62 @@ export class AppComponent implements AfterViewInit {
           sql(),
 
           basicSetup,
+
+          // EditorView.updateListener.of((vu) => {
+          //   const pos = vu.state.selection.main.from;
+          //   let token = syntaxTree(vu.state).resolve(pos, -1);
+          //   console.log(token);
+
+          //   // token = syntaxTree(vu.state).resolveInner(pos, -1);
+
+          //   while (token?.parent && token.name !== 'Statement' ) {
+          //     token = token.parent;
+          //   }
+
+          //   const a = {
+          //     from: token.from,
+          //     to: token.to,
+          //     selection: vu.state.sliceDoc(token.from, token.to)
+          //     // line: vu.state.doc.lineAt(token.from)
+          //   }
+          //   console.log(token);
+          //   // console.log(a.selection);
+          // }),
+
+          EditorView.updateListener.of((vu) => {
+            console.clear();
+            // const length = vu.state.doc.length;
+            // const lines = vu.state.doc.lines;
+            // console.log('length => ', length);
+            // console.log('lines => ', lines);
+
+            const main = vu.state.selection.main;
+            // this.selection = vu.state.selection.ranges.filter(r => r.from < r.to).map(r => ({ from: r.from, to: r.to }));
+            this.selection = main.from < main.to ? [{ from: main.from, to: main.to }] : [];
+            if (this.selection.length) {
+              console.log(this.selection);
+              this.selection.map(s => (console.log(vu.state.sliceDoc(s.from, s.to))));
+              return;
+            }
+
+            let token = syntaxTree(vu.state).resolve(main.from, 1);
+            if ((token as any).index === 0) {
+              token = syntaxTree(vu.state).resolve(main.from, -1);
+            }
+            // console.log('Current => ', token.type.name, token.from, token.to);
+            // console.log(token.type);
+            while (token?.parent && token.type.name !== 'Statement') {
+              token = token.parent;
+              // console.log(token.type);
+            }
+
+            if (token.name === 'Statement') {
+              this.selection = [{ from: token.from, to: token.to }];
+              this.selection.map(s => (console.log(vu.state.sliceDoc(s.from, s.to))));
+            }
+
+            console.log(this.selection.length);
+          }),
 
           // lineNumbers(),
 
@@ -135,31 +194,53 @@ export class AppComponent implements AfterViewInit {
     const range = this.view.state.selection.main;
 
     const selection = this.view.state.sliceDoc(range.from, range.to);
-    const line = this.view.state.doc.lineAt(range.from);
+    console.log(range, selection);
 
-    console.log(currentCompletions(this.view.state))
-
-    const foldableRanges = this.getFoldedRanges();
+    const lineStart = this.view.state.doc.lineAt(range.from);
+    const lineEnd = this.view.state.doc.lineAt(range.to);
+    console.log(lineStart, lineEnd);
   }
 
   getFoldedRanges() {
+    foldAll(this.view);
+
     const rangeSet = foldedRanges(this.view.state).iter(0);
 
-    const foldableRanges = <any>[];
+    const foldableRanges: { range: number[], selection?: string }[] = [];
 
     while (rangeSet.to !== rangeSet.from) {
       const line = this.view.state.doc.lineAt(rangeSet.from);
+      console.log(line);
 
       foldableRanges.push({
         range: [line.from, rangeSet.to],
-        selected: false
       });
 
       rangeSet.next();
     }
-
     unfoldAll(this.view);
 
-    return foldableRanges;
+    for (let i = 0; i < foldableRanges.length; i++) {
+      const r = foldableRanges[i];
+      r.selection = this.view.state.sliceDoc(r.range[0], r.range[1]);
+    }
+
+    console.log(foldableRanges);
+  }
+
+  getFoldable() {
+    const rangeSet = foldable(this.view.state, 5, 14);
+    console.log(rangeSet);
+  }
+
+  getTree() {
+    // console.log(this.view.state);
+
+    const tree = syntaxTree(this.view.state);
+    console.log(tree);
+
+    // const tree2 = ensureSyntaxTree(this.view.state, this.view.state.doc.length, 3000);
+    // console.log(tree2);
+
   }
 }

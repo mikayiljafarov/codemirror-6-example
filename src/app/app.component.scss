@@ -1,6 +1,12 @@
 .texteditor {
     width: 90%;
-    height: 90%;
+    height: 700px;
     border: 1px solid #ddd;
 }
 
+.btns {
+    margin-top: 24px;
+    button {
+        margin-right: 12px;
+    }
+}
