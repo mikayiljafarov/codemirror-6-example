@@ -52,7 +52,9 @@ CREATE TABLE Worker (
 INSERT INTO Worker 
 	(WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) VALUES
 		(008, 'Geetika', 'Chauhan', 90000, '14-04-11 09.00.00', 'Admin');
-`;
+
+
+		`;
 
 export interface ICompletion {
 	from: number;
