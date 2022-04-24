@@ -38,7 +38,8 @@ INSERT INTO Bonus
 `;
 
 export const query2 =
-	`CREATE TABLE Worker (
+	`-- This is first query
+CREATE TABLE Worker (
 	WORKER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	FIRST_NAME CHAR(25),
 	LAST_NAME CHAR(25),
@@ -47,6 +48,7 @@ export const query2 =
 	DEPARTMENT CHAR(25)
 );
 
+-- This is second query
 INSERT INTO Worker 
 	(WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) VALUES
 		(008, 'Geetika', 'Chauhan', 90000, '14-04-11 09.00.00', 'Admin');

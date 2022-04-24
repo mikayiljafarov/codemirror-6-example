@@ -10,6 +10,18 @@
     }
 }
 
+.cm-gutter.cm-foldGutter {
+    .cm-gutterElement {
+        width: 12px;
+        text-align: center;
+        // opacity: 0;
+        // transition: opacity .4s;
+    }
+    // &:hover .cm-gutterElement {
+    //     opacity: 1;
+    // }
+}
+
 .codicon-folding-expanded:before {
     content: '\eab4';
 }

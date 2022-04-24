@@ -1,26 +1,25 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
-import { EditorState, EditorView, basicSetup } from '@codemirror/basic-setup';
-import { MySQL, PostgreSQL, MSSQL, sql, keywordCompletion, SQLDialect, StandardSQL, schemaCompletion } from '@codemirror/lang-sql';
-import { keymap, highlightSpecialChars, drawSelection, highlightActiveLine, ViewUpdate } from '@codemirror/view';
-import { indentWithTab, selectSyntaxRight, selectGroupForward, selectLineBoundaryForward, selectParentSyntax } from '@codemirror/commands';
+import { basicSetup } from '@codemirror/basic-setup';
+import { EditorView } from "@codemirror/view";
+import { EditorState, StateEffect } from "@codemirror/state";
+import { keymap, highlightActiveLine, ViewUpdate } from '@codemirror/view';
+import { sql, keywordCompletion, StandardSQL, schemaCompletion } from '@codemirror/lang-sql';
+import { indentWithTab } from '@codemirror/commands';
 import { startCompletion, acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 
 import { lineNumbers, GutterMarker } from '@codemirror/gutter';
 import { history, undo, redo } from '@codemirror/history';
-import { foldAll, unfoldAll, foldCode, foldedRanges, foldGutter } from '@codemirror/fold';
-import { syntaxTree, foldService, foldable, ensureSyntaxTree, indentOnInput } from '@codemirror/language';
-import { defaultHighlightStyle, tags, HighlightStyle } from '@codemirror/highlight';
+import { foldGutter } from '@codemirror/fold';
+import { syntaxTree, indentOnInput } from '@codemirror/language';
+import { defaultHighlightStyle } from '@codemirror/highlight';
 import { bracketMatching } from '@codemirror/matchbrackets';
 import { closeBrackets } from '@codemirror/closebrackets';
-import { CompletionContext, currentCompletions } from "@codemirror/autocomplete";
+import { CompletionContext } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
-import { ICompletion, query1, query2 } from './queries';
-import { linter, lintGutter } from '@codemirror/lint';
+import { ICompletion, query2 } from './queries';
 
-import { Decoration, DecorationSet } from "@codemirror/view"
-import { StateField, StateEffect } from "@codemirror/state"
 
-import { toggleComment, lineComment } from '@codemirror/comment'
+import { toggleComment } from '@codemirror/comment'
 
 const WORDS = ['SELECT', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
 
@@ -133,7 +132,7 @@ export class AppComponent implements AfterViewInit {
             },
             {
               key: 'Mod-/',
-              run: lineComment,
+              run: toggleComment,
             },
             {
               key: 'Mod-z',
@@ -150,97 +149,44 @@ export class AppComponent implements AfterViewInit {
             indentWithTab
           ]),
 
-          foldGutter(),
 
           autocompletion({ override: [myCompletions] }),
           sql(),
 
-          // EditorView.updateListener.of((vu) => {
-          //   // console.log(vu.view);
-          //   console.log('--- LISTENER -----');
-
-          //   // console.clear();
-          //   // const length = vu.state.doc.length;
-          //   // const lines = vu.state.doc.lines;
-          //   // console.log('length => ', length);
-          //   // console.log('lines => ', lines);
-
-          //   const main = vu.state.selection.main;
-          //   // this.selection = vu.state.selection.ranges.filter(r => r.from < r.to).map(r => ({ from: r.from, to: r.to }));
-          //   this.selection = main.from < main.to ? [{ from: main.from, to: main.to }] : [];
-          //   if (this.selection.length) {
-          //     // console.log(this.selection);
-          //     // this.selection.map(s => (console.log(vu.state.sliceDoc(s.from, s.to))));
-          //     return;
-          //   }
-
-          //   let token = syntaxTree(vu.state).resolve(main.from, 1);
-          //   if ((token as any).index === 0) {
-          //     token = syntaxTree(vu.state).resolve(main.from, -1);
-          //   }
-          //   // console.log('Current => ', token.type.name, token.from, token.to);
-          //   // console.log(token.type);
-          //   while (token?.parent && token.type.name !== 'Statement') {
-          //     token = token.parent;
-          //     // console.log(token.type);
-          //   }
-
-          //   if (token.name === 'Statement') {
-          //     this.selection = [{ from: token.from, to: token.to }];
-          //     // this.selection.map(s => (console.log(vu.state.sliceDoc(s.from, s.to))));
-          //   }
-
-          //   // console.log(this.selection.length);
-          // }),
-
           gutter({
             class: "cm-my-gutter",
+            lineMarkerChange(update) {
+              return self.findActiveQuery(update);
+            },
             lineMarker(view, line) {
-              console.log('--- GUTTER -----');
-
-              // console.log(view.state.doc.lineAt(view.state.selection.main.from));
               if (self.selection[0]) {
                 const { from, to } = self.selection[0];
-
                 if (line.from >= from && line.from <= to) {
-                  // console.log(line);
-                  // console.log({ from, to });
                   return emptyMarker;
                 }
               }
-
-              return null
-            },
-            lineMarkerChange(update) {
-              console.log('--- update ---');
-              return self.findActiveQuery(update);
+              return null;
             },
             initialSpacer: () => emptyMarker
-          })
+          }),
+          foldGutter()
         ]
       }),
       parent: this.texteditor.nativeElement,
     });
-
-    // this.view.dispatch({
-    //   effects: StateEffect.appendConfig.of(extension)
-    // })
   }
 
   // range: { from: number, to: number } = { from: 0, to: 0 };
 
   findActiveQuery(view: ViewUpdate): boolean {
-    // console.log(view.view);
-    console.log('--- LISTENER -----');
-
-    // console.clear();
-    // const length = view.state.doc.length;
-    // const lines = view.state.doc.lines;
-    // console.log('length => ', length);
-    // console.log('lines => ', lines);
+    console.clear();
+    const length = view.state.doc.length;
+    const lines = view.state.doc.lines;
+    console.log('length => ', length);
+    console.log('lines => ', lines);
 
     const main = view.state.selection.main;
-    // this.selection = view.state.selection.ranges.filter(r => r.from < r.to).map(r => ({ from: r.from, to: r.to }));
+
     this.selection = main.from < main.to ? [{ from: main.from, to: main.to }] : [];
     if (this.selection.length) {
       // console.log(this.selection);
@@ -268,54 +214,18 @@ export class AppComponent implements AfterViewInit {
     return true;
   }
 
-  getSelection() {
-    const range = this.view.state.selection.main;
 
-    const selection = this.view.state.sliceDoc(range.from, range.to);
-    console.log(range, selection);
-
-    const lineStart = this.view.state.doc.lineAt(range.from);
-    const lineEnd = this.view.state.doc.lineAt(range.to);
-    console.log(lineStart, lineEnd);
-  }
-
-  getFoldedRanges() {
-    foldAll(this.view);
-
-    const rangeSet = foldedRanges(this.view.state).iter(0);
-
-    const foldableRanges: { range: number[], selection?: string }[] = [];
-
-    while (rangeSet.to !== rangeSet.from) {
-      const line = this.view.state.doc.lineAt(rangeSet.from);
-      console.log(line);
-
-      foldableRanges.push({
-        range: [line.from, rangeSet.to],
-      });
-
-      rangeSet.next();
-    }
-    unfoldAll(this.view);
-
-    for (let i = 0; i < foldableRanges.length; i++) {
-      const r = foldableRanges[i];
-      r.selection = this.view.state.sliceDoc(r.range[0], r.range[1]);
-    }
-
-    console.log(foldableRanges);
-  }
-
-  getFoldable() {
-    const rangeSet = foldable(this.view.state, 5, 14);
-    console.log(rangeSet);
-  }
 
   changeDoc() {
     // console.log(this.view.state);
     this.view.dispatch({
       changes: { from: 0, insert: "#!/usr/bin/env node\n" }
     })
+
+
+    // this.view.dispatch({
+    //   effects: StateEffect.appendConfig.of(extension)
+    // })
   }
 }
 
