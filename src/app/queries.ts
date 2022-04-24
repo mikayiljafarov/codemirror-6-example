@@ -1,5 +1,6 @@
 export const query1 =
-	`CREATE TABLE Worker (
+	`-- This is first query
+CREATE TABLE Worker (
 	WORKER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	FIRST_NAME CHAR(25),
 	LAST_NAME CHAR(25),
@@ -8,6 +9,7 @@ export const query1 =
 	DEPARTMENT CHAR(25)
 );
 
+-- This is second query
 INSERT INTO Worker 
 	(WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) VALUES
 		(001, 'Monika', 'Arora', 100000, '14-02-20 09.00.00', 'HR'),
@@ -19,6 +21,7 @@ INSERT INTO Worker
 		(007, 'Satish', 'Kumar', 75000, '14-01-20 09.00.00', 'Account'),
 		(008, 'Geetika', 'Chauhan', 90000, '14-04-11 09.00.00', 'Admin');
 
+-- This is third query
 CREATE TABLE Bonus (
 	WORKER_REF_ID INT,
 	BONUS_AMOUNT INT(10),
@@ -28,6 +31,7 @@ CREATE TABLE Bonus (
         ON DELETE CASCADE
 );
 
+-- This is fifth query
 INSERT INTO Bonus 
 	(WORKER_REF_ID, BONUS_AMOUNT, BONUS_DATE) VALUES
 		(001, 5000, '16-02-20'),

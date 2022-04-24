@@ -156,15 +156,13 @@ export class AppComponent implements AfterViewInit {
           gutter({
             class: "cm-my-gutter",
             lineMarkerChange(update) {
-              // return self.findActiveQuery(update);
-              return self.findQueriesFromSelections(update);
+              return self.findActiveQuery(update);
             },
             lineMarker(view, line) {
-              if (self.selection[0]) {
-                const { from, to } = self.selection[0];
-                if (line.from >= from && line.from <= to) {
-                  return emptyMarker;
-                }
+              console.log(line);
+
+              if (self.selection.some(s => (line.from >= s.from && line.from <= s.to))) {
+                return emptyMarker;
               }
               return null;
             },
@@ -177,57 +175,34 @@ export class AppComponent implements AfterViewInit {
     });
   }
 
-  findQueriesFromSelections(view: ViewUpdate): boolean {
-    console.clear();
+  recursive(buffer: any, main: any) {
+    if (buffer?.type?.name === 'Statement') {
+      const from = main.from <= buffer.from ? buffer.from : main.from;
+      const to = main.to >= buffer.to ? buffer.to : main.to;
 
-    this.selection = [];
+      console.log(buffer.type.name, buffer.from, buffer.to, '=>', from, to);
 
-    let bufferNode = syntaxTree(view.state).resolve(0, -1).firstChild;
-
-    if (bufferNode) {
-      console.log(bufferNode.type.name, bufferNode.from, bufferNode.to);
-
-      if (bufferNode.type?.name === 'Statement') {
-        this.selection.push({ from: bufferNode.from, to: bufferNode.to });
+      if (from < to) {
+        this.selection.push({ from, to });
       }
-
-      while (bufferNode?.nextSibling) {
-        bufferNode = bufferNode.nextSibling;
-
-        if (bufferNode.type.name === 'Statement') {
-          this.selection.push({ from: bufferNode.from, to: bufferNode.to });
-        }
-        console.log(bufferNode.type.name, bufferNode.from, bufferNode.to);
-      }
-
     }
 
-    this.selection.map(s => (console.log(s), console.log(view.state.sliceDoc(s.from, s.to))));
-
-    return true;
+    if (buffer?.nextSibling) {
+      this.recursive(buffer.nextSibling, main);
+    }
   }
 
 
   findActiveQuery(view: ViewUpdate): boolean {
-    console.clear();
+    this.selection = [];
 
     const main = view.state.selection.main;
 
-    this.selection = [];
+    console.clear();
+    console.log(main.from, main.to);
+
     if (main.from < main.to) {
-      const from = main.from;
-      const to = main.to;
-      console.log(from, to);
-
-      const lines = view.state.doc.lines;
-      console.log('lines => ', lines);
-
-      const length = view.state.doc.length;
-      console.log('length => ', length);
-
-
-      // console.log(this.selection);
-      // this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
+      this.recursive(syntaxTree(view.state).resolve(0, -1).firstChild, view.state.selection.main);
     } else {
       let token = syntaxTree(view.state).resolve(main.from, 1);
       console.log(token);
@@ -247,13 +222,11 @@ export class AppComponent implements AfterViewInit {
       }
     }
 
-
-
     this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
-    // console.log(this.selection.length);
+    console.log(this.selection);
+
     return true;
   }
-
 
 
   changeDoc() {
@@ -262,14 +235,11 @@ export class AppComponent implements AfterViewInit {
       changes: { from: 0, insert: "#!/usr/bin/env node\n" }
     })
 
-
     // this.view.dispatch({
     //   effects: StateEffect.appendConfig.of(extension)
     // })
   }
 }
-
-
 
 
 
@@ -290,3 +260,86 @@ export class AppComponent implements AfterViewInit {
 // }
 // // linter(validationErrorMarker),
 // // lintGutter()
+
+
+
+// findQueriesFromSelections2(view: ViewUpdate): boolean {
+//   console.clear();
+
+//   this.selection = [];
+
+//   const main = view.state.selection.main;
+
+//   if (main.from < main.to) {
+//     const from = main.from;
+//     const to = main.to;
+//     console.log(from, to);
+
+
+//     let bufferNode = syntaxTree(view.state).resolve(0, -1).firstChild;
+
+//     if (bufferNode) {
+
+//       if (bufferNode.type?.name === 'Statement') {
+//         const from = main.from <= bufferNode.from ? bufferNode.from : main.from;
+//         const to = main.to >= bufferNode.to ? bufferNode.to : main.to;
+
+//         console.log(bufferNode.type.name, bufferNode.from, bufferNode.to, '=>', from, to);
+
+//         this.selection.push({ from, to });
+//       }
+
+//       while (bufferNode?.nextSibling) {
+//         bufferNode = bufferNode.nextSibling;
+
+
+//         if (bufferNode.type.name === 'Statement') {
+//           const from = main.from <= bufferNode.from ? bufferNode.from : main.from;
+//           const to = main.to >= bufferNode.to ? bufferNode.to : main.to;
+
+//           console.log(bufferNode.type.name, bufferNode.from, bufferNode.to, '=>', from, to);
+
+//           this.selection.push({ from, to });
+//         }
+//       }
+
+//     }
+
+//     this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
+//   } else {
+//     return true;
+//   }
+//   return true;
+// }
+
+
+
+// getAllQueryFromDoc(view: ViewUpdate): boolean {
+//   console.clear();
+
+//   this.selection = [];
+
+//   let bufferNode = syntaxTree(view.state).resolve(0, -1).firstChild;
+
+//   if (bufferNode) {
+//     console.log(bufferNode.type.name, bufferNode.from, bufferNode.to);
+
+//     if (bufferNode.type?.name === 'Statement') {
+//       this.selection.push({ from: bufferNode.from, to: bufferNode.to });
+//     }
+
+//     while (bufferNode?.nextSibling) {
+//       bufferNode = bufferNode.nextSibling;
+
+//       if (bufferNode.type.name === 'Statement') {
+//         this.selection.push({ from: bufferNode.from, to: bufferNode.to });
+//       }
+//       console.log(bufferNode.type.name, bufferNode.from, bufferNode.to);
+//     }
+
+//   }
+
+//   this.selection.map(s => (console.log(s), console.log(view.state.sliceDoc(s.from, s.to))));
+
+//   return true;
+// }
