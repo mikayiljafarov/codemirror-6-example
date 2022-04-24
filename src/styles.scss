@@ -3,9 +3,18 @@
     height: 700px;
 }
 
-.cm-mygutter {
-    width: 5px;
-    // background-color: green;
+.cm-my-gutter {
+    .cm-gutterElement.my-test {
+        width: 5px;
+        background-color: green;
+    }
+}
+
+.codicon-folding-expanded:before {
+    content: '\eab4';
+}
+.codicon-folding-collapsed:before {
+    content: '\eab6';
 }
 
 .cm-completionIcon-table:after {
