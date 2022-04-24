@@ -16,7 +16,7 @@ import { bracketMatching } from '@codemirror/matchbrackets';
 import { closeBrackets } from '@codemirror/closebrackets';
 import { CompletionContext } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
-import { ICompletion, query2 } from './queries';
+import { ICompletion, query1, query2 } from './queries';
 
 
 import { toggleComment } from '@codemirror/comment'
@@ -156,7 +156,8 @@ export class AppComponent implements AfterViewInit {
           gutter({
             class: "cm-my-gutter",
             lineMarkerChange(update) {
-              return self.findActiveQuery(update);
+              // return self.findActiveQuery(update);
+              return self.findQueriesFromSelections(update);
             },
             lineMarker(view, line) {
               if (self.selection[0]) {
@@ -176,40 +177,79 @@ export class AppComponent implements AfterViewInit {
     });
   }
 
-  // range: { from: number, to: number } = { from: 0, to: 0 };
+  findQueriesFromSelections(view: ViewUpdate): boolean {
+    console.clear();
+
+    this.selection = [];
+
+    let bufferNode = syntaxTree(view.state).resolve(0, -1).firstChild;
+
+    if (bufferNode) {
+      console.log(bufferNode.type.name, bufferNode.from, bufferNode.to);
+
+      if (bufferNode.type?.name === 'Statement') {
+        this.selection.push({ from: bufferNode.from, to: bufferNode.to });
+      }
+
+      while (bufferNode?.nextSibling) {
+        bufferNode = bufferNode.nextSibling;
+
+        if (bufferNode.type.name === 'Statement') {
+          this.selection.push({ from: bufferNode.from, to: bufferNode.to });
+        }
+        console.log(bufferNode.type.name, bufferNode.from, bufferNode.to);
+      }
+
+    }
+
+    this.selection.map(s => (console.log(s), console.log(view.state.sliceDoc(s.from, s.to))));
+
+    return true;
+  }
+
 
   findActiveQuery(view: ViewUpdate): boolean {
     console.clear();
-    const length = view.state.doc.length;
-    const lines = view.state.doc.lines;
-    console.log('length => ', length);
-    console.log('lines => ', lines);
 
     const main = view.state.selection.main;
 
-    this.selection = main.from < main.to ? [{ from: main.from, to: main.to }] : [];
-    if (this.selection.length) {
+    this.selection = [];
+    if (main.from < main.to) {
+      const from = main.from;
+      const to = main.to;
+      console.log(from, to);
+
+      const lines = view.state.doc.lines;
+      console.log('lines => ', lines);
+
+      const length = view.state.doc.length;
+      console.log('length => ', length);
+
+
       // console.log(this.selection);
       // this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
-      return true;
-    }
-
-    let token = syntaxTree(view.state).resolve(main.from, 1);
-    if ((token as any).index === 0) {
-      token = syntaxTree(view.state).resolve(main.from, -1);
-    }
-    // console.log('Current => ', token.type.name, token.from, token.to);
-    // console.log(token.type);
-    while (token?.parent && token.type.name !== 'Statement') {
-      token = token.parent;
+    } else {
+      let token = syntaxTree(view.state).resolve(main.from, 1);
+      console.log(token);
+      // Only TreeNode class has index property
+      if ((token as any).index === 0) {
+        token = syntaxTree(view.state).resolve(main.from, -1);
+      }
+      // console.log('Current => ', token.type.name, token.from, token.to);
       // console.log(token.type);
+      while (token?.parent && token.type.name !== 'Statement') {
+        token = token.parent;
+        // console.log(token.type);
+      }
+
+      if (token.name === 'Statement') {
+        this.selection = [{ from: token.from, to: token.to }];
+      }
     }
 
-    if (token.name === 'Statement') {
-      this.selection = [{ from: token.from, to: token.to }];
-      // this.selection.map(s => (console.log(vu.state.sliceDoc(s.from, s.to))));
-    }
 
+
+    this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
     // console.log(this.selection.length);
     return true;
   }
