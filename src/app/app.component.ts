@@ -159,8 +159,6 @@ export class AppComponent implements AfterViewInit {
               return self.findActiveQuery(update);
             },
             lineMarker(view, line) {
-              console.log(line);
-
               if (self.selection.some(s => (line.from >= s.from && line.from <= s.to))) {
                 return emptyMarker;
               }

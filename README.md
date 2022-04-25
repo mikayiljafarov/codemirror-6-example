@@ -32,6 +32,7 @@ Git lens
 IntelliSense for CSS class names in HTML
 Prettier - Code fromatter
 
+>npm install @codemirror/basic-setup @codemirror/view @codemirror/state @codemirror/language @codemirror/lang-sql @codemirror/commands @codemirror/autocomplete @codemirror/gutter @codemirror/history @codemirror/fold @codemirror/highlight @codemirror/matchbrackets @codemirror/closebrackets @codemirror/comment
 
 {
   "key": "cmd+space",
