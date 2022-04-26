@@ -1,3 +1,44 @@
+export interface Completion {
+	label: string;
+	detail: string;
+	info: string;
+	type: 'table';
+	boost: 99;
+	columns: {
+		label: string;
+		detail: string;
+		info: string;
+		type: 'column';
+		boost: 98;
+	}[]
+}
+
+export const completion: Completion[] = [{
+	label: 'table1',
+	detail: '(default)',
+	info: '2 columns',
+	type: 'table',
+	boost: 99,
+	columns: [
+		{
+			label: 'name',
+			detail: '(default.table1)',
+			info: 'string',
+			type: 'column',
+			boost: 98,
+		},
+		{
+			label: 'age',
+			detail: '(default.table1)',
+			info: 'int',
+			type: 'column',
+			boost: 98,
+		}
+
+	]
+}];
+
+
 export const query1 =
 	`-- This is first query
 CREATE TABLE Worker (
@@ -42,8 +83,8 @@ INSERT INTO Bonus
 `;
 
 export const query2 =
-	`-- This is first query
-CREATE TABLE Worker (
+	`SELECT * FROM 
+	CREATE TABLE Worker (
 	WORKER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	FIRST_NAME CHAR(25),
 	LAST_NAME CHAR(25),

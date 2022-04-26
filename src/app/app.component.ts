@@ -55,13 +55,15 @@ function myCompletions(context: CompletionContext): any {
   //     options: WORDS.map((w, i) => ({ label: w, type: "variable", boost: (-1 * i) }))
   //   };
   // }
+  console.clear();
+
 
   const baseExt: any = keywordCompletion(StandardSQL, true);
   const base: ICompletion = baseExt.value.autocomplete(context);
 
   const custom: ICompletion = customExt.value.autocomplete(context);
 
-  // console.log(base, custom);
+  console.log(base, custom);
 
   if (base?.options) {
     for (let i = 0; i < base.options.length; i++) {
@@ -173,17 +175,34 @@ export class AppComponent implements AfterViewInit {
     });
   }
 
+  recursive2(buffer: any) {
+
+    if (buffer) {
+      console.log(buffer?.type?.name, buffer?.from, buffer?.to, ' -> ', this.view.state.sliceDoc(buffer?.from, buffer?.to));
+    }
+
+    if (buffer?.firstChild) {
+      this.recursive2(buffer?.firstChild);
+    }
+
+    if (buffer?.nextSibling) {
+      this.recursive2(buffer.nextSibling);
+    }
+  }
+
   recursive(buffer: any, main: any) {
     if (buffer?.type?.name === 'Statement') {
       const from = main.from <= buffer.from ? buffer.from : main.from;
       const to = main.to >= buffer.to ? buffer.to : main.to;
 
-      console.log(buffer.type.name, buffer.from, buffer.to, '=>', from, to);
+      // console.log(buffer.type.name, buffer.from, buffer.to, '=>', from, to);
 
       if (from < to) {
         this.selection.push({ from, to });
       }
     }
+
+    // this.recursive2(buffer);
 
     if (buffer?.nextSibling) {
       this.recursive(buffer.nextSibling, main);
@@ -196,14 +215,14 @@ export class AppComponent implements AfterViewInit {
 
     const main = view.state.selection.main;
 
-    console.clear();
-    console.log(main.from, main.to);
+    // console.clear();
+    // console.log(main.from, main.to);
 
     if (main.from < main.to) {
       this.recursive(syntaxTree(view.state).resolve(0, -1).firstChild, view.state.selection.main);
     } else {
       let token = syntaxTree(view.state).resolve(main.from, 1);
-      console.log(token);
+      // console.log(token);
       // Only TreeNode class has index property
       if ((token as any).index === 0) {
         token = syntaxTree(view.state).resolve(main.from, -1);
@@ -220,8 +239,8 @@ export class AppComponent implements AfterViewInit {
       }
     }
 
-    this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
-    console.log(this.selection);
+    // this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
+    // console.log(this.selection);
 
     return true;
   }
