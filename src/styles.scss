@@ -40,3 +40,19 @@
     content: '🔑︎';
 }
 // ⌘
+
+.cm-tooltip {
+    border-radius: 2px!important;
+    border: 1px solid #e8e8e8!important;
+    background-color: #fefefe!important;
+}
+
+.cm-tooltip-autocomplete .cm-completionMatchedText {
+    color: #005cb8;
+    text-decoration: unset;
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+    background-color: #6bb5ff!important;
+    color: #fcfcfc;
+}
