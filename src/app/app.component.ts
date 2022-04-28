@@ -58,14 +58,14 @@ function myCompletions(context: CompletionContext): any {
   console.clear();
 
 
+  const custom: ICompletion = customExt.value.autocomplete(context);
+
   const baseExt: any = keywordCompletion(StandardSQL, true);
   const base: ICompletion = baseExt.value.autocomplete(context);
 
-  const custom: ICompletion = customExt.value.autocomplete(context);
+  console.log(custom, base);
 
-  console.log(base, custom);
-
-  if (base?.options) {
+  if (custom && base) {
     for (let i = 0; i < base.options.length; i++) {
       if (WORDS.includes(base.options[i].label)) {
         base.options[i].boost = 98;
@@ -74,7 +74,8 @@ function myCompletions(context: CompletionContext): any {
     base.options.push(...custom.options);
     return base;
   }
-  return custom;
+
+  return base || custom;
 }
 
 const emptyMarker = new class extends GutterMarker {
@@ -106,7 +107,7 @@ export class AppComponent implements AfterViewInit {
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({
-        doc: query1,
+        doc: `SELECT `,
         extensions: [
           // basicSetup,
           lineNumbers(),
@@ -219,20 +220,7 @@ export class AppComponent implements AfterViewInit {
 
     return true;
   }
-
-
-  changeDoc() {
-    // console.log(this.view.state);
-    this.view.dispatch({
-      changes: { from: 0, insert: "#!/usr/bin/env node\n" }
-    })
-
-    // this.view.dispatch({
-    //   effects: StateEffect.appendConfig.of(extension)
-    // })
-  }
 }
-
 
 
 // const myHighlightStyle = HighlightStyle.define([
@@ -352,4 +340,18 @@ export class AppComponent implements AfterViewInit {
 //   if (buffer?.nextSibling) {
 //     this.recursive(buffer.nextSibling, main);
 //   }
+// }
+
+
+
+
+// changeDoc() {
+//   // console.log(this.view.state);
+//   this.view.dispatch({
+//     changes: { from: 0, insert: "#!/usr/bin/env node\n" }
+//   })
+
+//   // this.view.dispatch({
+//   //   effects: StateEffect.appendConfig.of(extension)
+//   // })
 // }
