@@ -106,7 +106,7 @@ export class AppComponent implements AfterViewInit {
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({
-        doc: query2,
+        doc: query1,
         extensions: [
           // basicSetup,
           lineNumbers(),
@@ -119,6 +119,7 @@ export class AppComponent implements AfterViewInit {
 
           bracketMatching(),
           closeBrackets(),
+          //
 
           highlightActiveLine(),
           highlightActiveLineGutter(),
@@ -175,51 +176,25 @@ export class AppComponent implements AfterViewInit {
     });
   }
 
-  recursive2(buffer: any) {
-
-    if (buffer) {
-      console.log(buffer?.type?.name, buffer?.from, buffer?.to, ' -> ', this.view.state.sliceDoc(buffer?.from, buffer?.to));
-    }
-
-    if (buffer?.firstChild) {
-      this.recursive2(buffer?.firstChild);
-    }
-
-    if (buffer?.nextSibling) {
-      this.recursive2(buffer.nextSibling);
-    }
-  }
-
-  recursive(buffer: any, main: any) {
-    if (buffer?.type?.name === 'Statement') {
-      const from = main.from <= buffer.from ? buffer.from : main.from;
-      const to = main.to >= buffer.to ? buffer.to : main.to;
-
-      // console.log(buffer.type.name, buffer.from, buffer.to, '=>', from, to);
-
-      if (from < to) {
-        this.selection.push({ from, to });
-      }
-    }
-
-    // this.recursive2(buffer);
-
-    if (buffer?.nextSibling) {
-      this.recursive(buffer.nextSibling, main);
-    }
-  }
-
-
   findActiveQuery(view: ViewUpdate): boolean {
     this.selection = [];
-
+    const self = this;
     const main = view.state.selection.main;
 
-    // console.clear();
-    // console.log(main.from, main.to);
-
     if (main.from < main.to) {
-      this.recursive(syntaxTree(view.state).resolve(0, -1).firstChild, view.state.selection.main);
+      syntaxTree(view.state).iterate({
+        enter(type, from_, to_) {
+          console.log(from_, to_, type);
+          if (type.name === 'Statement') {
+            const from = main.from <= from_ ? from_ : main.from;
+            const to = main.to >= to_ ? to_ : main.to;
+            if (from < to) {
+              self.selection.push({ from, to });
+            }
+          }
+        }
+      });
+      // this.recursive(syntaxTree(view.state).resolve(0, -1).firstChild, view.state.selection.main);
     } else {
       let token = syntaxTree(view.state).resolve(main.from, 1);
       // console.log(token);
@@ -359,4 +334,22 @@ export class AppComponent implements AfterViewInit {
 //   this.selection.map(s => (console.log(s), console.log(view.state.sliceDoc(s.from, s.to))));
 
 //   return true;
+// }
+
+
+// recursive(buffer: any, main: any) {
+//   if (buffer?.type?.name === 'Statement') {
+//     const from = main.from <= buffer.from ? buffer.from : main.from;
+//     const to = main.to >= buffer.to ? buffer.to : main.to;
+
+//     // console.log(buffer.type.name, buffer.from, buffer.to, '=>', from, to);
+
+//     if (from < to) {
+//       this.selection.push({ from, to });
+//     }
+//   }
+
+//   if (buffer?.nextSibling) {
+//     this.recursive(buffer.nextSibling, main);
+//   }
 // }
