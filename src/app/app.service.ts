@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -10,4 +11,8 @@ export class AppService {
   getCompletion() {
 
   }
+
+  // async getColumn(): Promise {
+  //   return await of()
+  // }
 }

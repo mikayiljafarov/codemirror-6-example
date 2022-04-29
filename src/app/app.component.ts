@@ -19,56 +19,69 @@ import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
 import { ICompletion, query1, query2 } from './queries';
 
 
-import { toggleComment } from '@codemirror/comment'
+import { toggleComment } from '@codemirror/comment';
 
-const WORDS = ['SELECT', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
+const WORDS = ['SELECT', 'SET', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
 
-const customExt: any = schemaCompletion({
-  tables: [
-    {
-      label: 'table1',
-      detail: 'Table detail',
-      info: 'Table info',
-      type: 'table',
-      boost: 99
-    }
-  ],
-  schema: {
-    table1: [
-      {
-        label: 'col-1',
-        detail: 'Column detail',
-        info: 'Column info',
-        type: 'column',
-        boost: 99
-      },
-    ],
-  },
-});
+const COLUMNS = {
+  table1: [...Array(6)].map((_, i) => ({ label: `col1_${i}`, boost: 98, type: 'column' })),
+  table2: [...Array(6)].map((_, i) => ({ label: `col2_${i}`, boost: 98, type: 'column' })),
+  table3: [...Array(6)].map((_, i) => ({ label: `col3_${i}`, boost: 98, type: 'column' })),
+  table4: [...Array(6)].map((_, i) => ({ label: `col_${i}`, boost: 98, type: 'column' }))
+}
+const TABLES = Object.keys(COLUMNS);
 
 function myCompletions(context: CompletionContext): any {
-  // let word = context.matchBefore(/\w*/);
-  // console.log(context.explicit, word);
-  // if ((word && word?.from == word?.to && !context.explicit)) {
+  console.clear();
+  console.log(context);
+  console.log(COLUMNS);
+
+  // let word = context.matchBefore(/Select | SELECT /);
+  // console.log(word);
+  // if ((word && word?.from !== word?.to)) {
+  //   console.log('---ok---');
+
   //   return {
-  //     from: word?.from,
-  //     options: WORDS.map((w, i) => ({ label: w, type: "variable", boost: (-1 * i) }))
+  //     from: word.to,
+  //     options: [
+  //       { label: "match", type: "keyword" },
+  //       { label: "hello", type: "variable", info: "(World)" },
+  //       { label: "magic", type: "text", apply: "⠁⭒*.✩.*⭒⠁", detail: "macro" }
+  //     ]
+  //     // options: [
+  //     //   { label: "*", type: "keyword", boost: 99 },
+  //     //   { label: "DISTINCT", type: "keyword", boost: 99 }
+  //     // ]
+  //     // options: WORDS.map((w, i) => ({ label: w, type: "variable", boost: (-1 * i) }))
   //   };
   // }
-  console.clear();
 
+  // const customExt: any = schemaCompletion({
+  //   tables: TABLES.map(t => ({ label: t, boost: 99 })),
+  //   defaultTable: TABLES[0],
+  //   schema: COLUMNS
+  // })
+
+  const customExt: any = schemaCompletion({
+    tables: TABLES.map(t => ({ label: t, boost: 98, type: 'table' })),
+    defaultTable: TABLES[0],
+    schema: COLUMNS
+  });
+
+  console.log(customExt);
 
   const custom: ICompletion = customExt.value.autocomplete(context);
 
   const baseExt: any = keywordCompletion(StandardSQL, true);
   const base: ICompletion = baseExt.value.autocomplete(context);
 
-  console.log(custom, base);
+  console.table(custom?.options);
+  console.log(base);
 
   if (custom && base) {
     for (let i = 0; i < base.options.length; i++) {
       if (WORDS.includes(base.options[i].label)) {
-        base.options[i].boost = 98;
+        base.options[i].boost = 9
       }
     }
     base.options.push(...custom.options);
@@ -107,7 +120,7 @@ export class AppComponent implements AfterViewInit {
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({
-        doc: `SELECT `,
+        doc: 'Select * from table1',
         extensions: [
           // basicSetup,
           lineNumbers(),
@@ -184,8 +197,8 @@ export class AppComponent implements AfterViewInit {
 
     if (main.from < main.to) {
       syntaxTree(view.state).iterate({
-        enter(type, from_, to_) {
-          console.log(from_, to_, type);
+        enter(type, from_, to_, get_) {
+          console.log(from_, to_, type, get_());
           if (type.name === 'Statement') {
             const from = main.from <= from_ ? from_ : main.from;
             const to = main.to >= to_ ? to_ : main.to;
@@ -355,3 +368,6 @@ export class AppComponent implements AfterViewInit {
 //   //   effects: StateEffect.appendConfig.of(extension)
 //   // })
 // }
+
+
+  // let token = context.tokenBefore(['(', 'Identifier']);
