@@ -5,7 +5,7 @@ import { EditorState, StateEffect } from "@codemirror/state";
 import { keymap, highlightActiveLine, ViewUpdate } from '@codemirror/view';
 import { sql, keywordCompletion, StandardSQL, schemaCompletion } from '@codemirror/lang-sql';
 import { indentWithTab } from '@codemirror/commands';
-import { startCompletion, acceptCompletion, autocompletion } from '@codemirror/autocomplete';
+import { startCompletion, acceptCompletion, autocompletion, closeCompletion } from '@codemirror/autocomplete';
 
 import { lineNumbers, GutterMarker } from '@codemirror/gutter';
 import { history, undo, redo } from '@codemirror/history';
@@ -16,7 +16,7 @@ import { bracketMatching } from '@codemirror/matchbrackets';
 import { closeBrackets } from '@codemirror/closebrackets';
 import { CompletionContext } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
-import { ICompletion, query1, query2 } from './queries';
+import { ICompletion, ISelection, query1, query2 } from './queries';
 
 
 import { toggleComment } from '@codemirror/comment';
@@ -27,48 +27,42 @@ const COLUMNS = {
   table1: [...Array(6)].map((_, i) => ({ label: `col1_${i}`, boost: 98, type: 'column' })),
   table2: [...Array(6)].map((_, i) => ({ label: `col2_${i}`, boost: 98, type: 'column' })),
   table3: [...Array(6)].map((_, i) => ({ label: `col3_${i}`, boost: 98, type: 'column' })),
-  table4: [...Array(6)].map((_, i) => ({ label: `col_${i}`, boost: 98, type: 'column' }))
+  table4: [...Array(6)].map((_, i) => ({ label: `col4_${i}`, boost: 98, type: 'column' }))
 }
 const TABLES = Object.keys(COLUMNS);
 
+function getCurrentStatement(state: EditorState, from: number): ISelection | null {
+  let node = syntaxTree(state).resolve(from, 1);
+  if ((node as any).index === 0) {
+    node = syntaxTree(state).resolve(from, -1);
+  }
+  // console.log(node.type, node.name, node.from, node.to);
+  while (node?.parent && node.name !== 'Statement') {
+    node = node.parent;
+  }
+
+  if (node.name === 'Statement') {
+    return { from: node.from, to: node.to };
+  }
+
+  return null;
+}
+
 function myCompletions(context: CompletionContext): any {
   console.clear();
-  console.log(context);
-  console.log(COLUMNS);
-
-  // let word = context.matchBefore(/Select | SELECT /);
-  // console.log(word);
-  // if ((word && word?.from !== word?.to)) {
-  //   console.log('---ok---');
-
-  //   return {
-  //     from: word.to,
-  //     options: [
-  //       { label: "match", type: "keyword" },
-  //       { label: "hello", type: "variable", info: "(World)" },
-  //       { label: "magic", type: "text", apply: "⠁⭒*.✩.*⭒⠁", detail: "macro" }
-  //     ]
-  //     // options: [
-  //     //   { label: "*", type: "keyword", boost: 99 },
-  //     //   { label: "DISTINCT", type: "keyword", boost: 99 }
-  //     // ]
-  //     // options: WORDS.map((w, i) => ({ label: w, type: "variable", boost: (-1 * i) }))
-  //   };
-  // }
-
-  // const customExt: any = schemaCompletion({
-  //   tables: TABLES.map(t => ({ label: t, boost: 99 })),
-  //   defaultTable: TABLES[0],
-  //   schema: COLUMNS
-  // })
+  
+  const query: ISelection | null = getCurrentStatement(context.state, context.pos);
+  let defaultTable = '';
+  if(query){
+    const doc = context.state.sliceDoc(query.from, query.to);
+    defaultTable = TABLES.find(t => doc.includes(t)) || '';
+  }
 
   const customExt: any = schemaCompletion({
-    tables: TABLES.map(t => ({ label: t, boost: 98, type: 'table' })),
-    defaultTable: TABLES[0],
+    tables: TABLES.map(t => ({ label: t, boost: 97, type: 'table' })),
+    defaultTable: defaultTable,
     schema: COLUMNS
   });
-
-  console.log(customExt);
 
   const custom: ICompletion = customExt.value.autocomplete(context);
 
@@ -76,7 +70,6 @@ function myCompletions(context: CompletionContext): any {
   const base: ICompletion = baseExt.value.autocomplete(context);
 
   console.table(custom?.options);
-  console.log(base);
 
   if (custom && base) {
     for (let i = 0; i < base.options.length; i++) {
@@ -96,7 +89,6 @@ const emptyMarker = new class extends GutterMarker {
   override elementClass = 'my-test';
 }
 
-
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -108,7 +100,7 @@ export class AppComponent implements AfterViewInit {
 
   view!: EditorView;
 
-  selection: { from: number, to: number }[] = [];
+  selection: ISelection[] = [];
 
   onSubmit(view: EditorView): boolean {
     console.log(view);
@@ -120,7 +112,7 @@ export class AppComponent implements AfterViewInit {
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({
-        doc: 'Select * from table1',
+        doc: query1,
         extensions: [
           // basicSetup,
           lineNumbers(),
@@ -198,7 +190,7 @@ export class AppComponent implements AfterViewInit {
     if (main.from < main.to) {
       syntaxTree(view.state).iterate({
         enter(type, from_, to_, get_) {
-          console.log(from_, to_, type, get_());
+          // console.log(from_, to_, type, get_());
           if (type.name === 'Statement') {
             const from = main.from <= from_ ? from_ : main.from;
             const to = main.to >= to_ ? to_ : main.to;
@@ -210,22 +202,8 @@ export class AppComponent implements AfterViewInit {
       });
       // this.recursive(syntaxTree(view.state).resolve(0, -1).firstChild, view.state.selection.main);
     } else {
-      let token = syntaxTree(view.state).resolve(main.from, 1);
-      // console.log(token);
-      // Only TreeNode class has index property
-      if ((token as any).index === 0) {
-        token = syntaxTree(view.state).resolve(main.from, -1);
-      }
-      // console.log('Current => ', token.type.name, token.from, token.to);
-      // console.log(token.type);
-      while (token?.parent && token.type.name !== 'Statement') {
-        token = token.parent;
-        // console.log(token.type);
-      }
-
-      if (token.name === 'Statement') {
-        this.selection = [{ from: token.from, to: token.to }];
-      }
+      const s = getCurrentStatement(view.state, main.from);
+      this.selection = s ? [s] : [];
     }
 
     // this.selection.map(s => (console.log(view.state.sliceDoc(s.from, s.to))));
@@ -233,6 +211,8 @@ export class AppComponent implements AfterViewInit {
 
     return true;
   }
+
+  
 }
 
 
@@ -370,4 +350,4 @@ export class AppComponent implements AfterViewInit {
 // }
 
 
-  // let token = context.tokenBefore(['(', 'Identifier']);
+  // let node = context.tokenBefore(['(', 'Identifier']);

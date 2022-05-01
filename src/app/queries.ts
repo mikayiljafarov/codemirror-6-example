@@ -1,3 +1,7 @@
+export interface ISelection { 
+	from: number;
+	to: number;
+}
 export interface Completion {
 	label: string;
 	detail: string;
@@ -40,7 +44,8 @@ export const completion: Completion[] = [{
 
 
 export const query1 =
-	`-- This is first query
+	`SELECT * FROM table
+-- This is first query
 CREATE TABLE Worker (
 	WORKER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	FIRST_NAME CHAR(25),
