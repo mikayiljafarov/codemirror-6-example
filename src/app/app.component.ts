@@ -14,12 +14,15 @@ import { syntaxTree, indentOnInput } from '@codemirror/language';
 import { defaultHighlightStyle } from '@codemirror/highlight';
 import { bracketMatching } from '@codemirror/matchbrackets';
 import { closeBrackets } from '@codemirror/closebrackets';
-import { CompletionContext } from "@codemirror/autocomplete";
+import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
 import { ICompletion, ISelection, query1, query2 } from './queries';
 
 
+
 import { toggleComment } from '@codemirror/comment';
+import { lastValueFrom, map } from 'rxjs';
+import { AppService } from './app.service';
 
 const WORDS = ['SELECT', 'SET', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
 
@@ -48,12 +51,13 @@ function getCurrentStatement(state: EditorState, from: number): ISelection | nul
   return null;
 }
 
+
 function myCompletions(context: CompletionContext): any {
   console.clear();
-  
+
   const query: ISelection | null = getCurrentStatement(context.state, context.pos);
   let defaultTable = '';
-  if(query){
+  if (query) {
     const doc = context.state.sliceDoc(query.from, query.to);
     defaultTable = TABLES.find(t => doc.includes(t)) || '';
   }
@@ -68,9 +72,8 @@ function myCompletions(context: CompletionContext): any {
 
   const baseExt: any = keywordCompletion(StandardSQL, true);
   const base: ICompletion = baseExt.value.autocomplete(context);
-
+  
   console.table(custom?.options);
-
   if (custom && base) {
     for (let i = 0; i < base.options.length; i++) {
       if (WORDS.includes(base.options[i].label)) {
@@ -101,6 +104,8 @@ export class AppComponent implements AfterViewInit {
   view!: EditorView;
 
   selection: ISelection[] = [];
+
+  constructor(private service: AppService){}
 
   onSubmit(view: EditorView): boolean {
     console.log(view);
@@ -159,7 +164,25 @@ export class AppComponent implements AfterViewInit {
           ]),
 
 
-          autocompletion({ override: [myCompletions] }),
+          autocompletion({
+            override: [
+              myCompletions,
+              // async (ctx: CompletionContext): Promise<CompletionResult | any> => {
+              //   return await lastValueFrom(
+              //     this.service.getCompletion2().pipe(
+              //       map(tables => {
+              //         // console.log(tables.map((t:any) => ({ label: t, boost: 97, type: 'table' })));
+              //         const customExt: any = schemaCompletion({
+              //           tables: tables.map((t:any) => ({ label: t, boost: 97, type: 'table' })),
+              //           schema: COLUMNS,
+              //         });
+              //         return customExt.value.autocomplete(ctx);
+              //       })
+              //     )
+              //   );
+              // }
+            ]
+          }),
           sql(),
 
           gutter({
@@ -180,6 +203,13 @@ export class AppComponent implements AfterViewInit {
       }),
       parent: this.texteditor.nativeElement,
     });
+
+
+    // this.view.contentDOM.onclick = (event => {
+    //   // trigger closeCompletion
+    //   this.view.dispatch({effects: closeCompletion.apply()});
+
+    // })
   }
 
   findActiveQuery(view: ViewUpdate): boolean {
@@ -212,7 +242,6 @@ export class AppComponent implements AfterViewInit {
     return true;
   }
 
-  
 }
 
 

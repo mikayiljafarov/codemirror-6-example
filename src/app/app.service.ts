@@ -1,18 +1,21 @@
 import { Injectable } from '@angular/core';
-import { of } from 'rxjs';
+import { lastValueFrom, map, Observable, of, tap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+
+const url = 'https://jsonplaceholder.typicode.com/posts';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AppService {
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
-  getCompletion() {
-
+  getCompletion(): Promise<any> {
+    return lastValueFrom(this.http.get<any>(url).pipe(map(() => ['table1', 'table2'])));
   }
 
-  // async getColumn(): Promise {
-  //   return await of()
-  // }
+  getCompletion2(): Observable<any> {
+    return this.http.get<any>(url).pipe(map(() => ['table1', 'table2']));
+  }
 }
