@@ -204,11 +204,8 @@ export class AppComponent implements AfterViewInit {
       parent: this.texteditor.nativeElement,
     });
 
-
     // this.view.contentDOM.onclick = (event => {
-    //   // trigger closeCompletion
-    //   this.view.dispatch({effects: closeCompletion.apply()});
-
+    //   closeCompletion(this.view);
     // })
   }
 
