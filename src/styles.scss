@@ -39,6 +39,10 @@
 .cm-completionIcon-keyword:after {
     content: '🔑︎';
 }
+
+.cm-completionIcon-query-vars:after {
+    content: '>';
+}
 // ⌘
 
 .cm-tooltip {

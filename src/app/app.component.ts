@@ -16,7 +16,7 @@ import { bracketMatching } from '@codemirror/matchbrackets';
 import { closeBrackets } from '@codemirror/closebrackets';
 import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
 import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
-import { ICompletion, ISelection, query1, query2 } from './queries';
+import { ICompletion, ISelection, query1, query2, queryVars } from './queries';
 
 
 
@@ -52,13 +52,24 @@ function getCurrentStatement(state: EditorState, from: number): ISelection | nul
 }
 
 
-function myCompletions(context: CompletionContext): any {
-  // console.clear();
+function myCompletions(context: CompletionContext): CompletionResult | any {
+  console.clear();
+
+  let word = context.matchBefore(/{{/)
+  let token = context.tokenBefore(['{', '}']);
+  console.log(word, token);
+  
+  if(word?.to){
+    return {
+      from: word?.to,
+      options: queryVars.map(q => ({ label: q.label, type: 'query-vars'}))
+    }
+  }
 
   const query: ISelection | null = getCurrentStatement(context.state, context.pos);
   let defaultTable = '';
   if (query) {
-    const doc = context.state.sliceDoc(query.from, query.to);
+    const doc = context.state.sliceDoc(query?.from, query?.to);
     defaultTable = TABLES.find(t => doc.includes(t)) || '';
   }
 
@@ -114,10 +125,6 @@ export class AppComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
-    console.log(new Error('Sentry test error'));
-    throw new Error("Testetet");
-        
-    
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({

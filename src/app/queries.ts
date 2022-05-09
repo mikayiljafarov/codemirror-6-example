@@ -1,4 +1,4 @@
-export interface ISelection { 
+export interface ISelection {
 	from: number;
 	to: number;
 }
@@ -116,3 +116,27 @@ export interface ICompletion {
 	span: string;
 	to?: number;
 }
+
+export interface IQueryVar {
+	label: string;
+	value: string;
+}
+
+export const queryVars: IQueryVar[] = [
+	{
+		label: 'Current Name',
+		value: 'vugar'
+	},
+	{
+		label: 'Current Name2',
+		value: 'vugar2'
+	},
+	{
+		label: 'Active id',
+		value: '45'
+	},
+	{
+		label: 'Effective date',
+		value: '16-02-2020'
+	}
+]
