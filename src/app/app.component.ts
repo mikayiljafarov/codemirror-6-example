@@ -62,7 +62,7 @@ function myCompletions(context: CompletionContext): CompletionResult | any {
   if(word?.to){
     return {
       from: word?.to,
-      options: queryVars.map(q => ({ label: q.label, type: 'query-vars'}))
+      options: queryVars.map(q => ({ label: q.label, type: 'query-variable'}))
     }
   }
 
@@ -128,7 +128,7 @@ export class AppComponent implements AfterViewInit {
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({
-        doc: query1,
+        doc: '',//query1,
         extensions: [
           // basicSetup,
           lineNumbers(),

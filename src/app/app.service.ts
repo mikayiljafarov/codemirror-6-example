@@ -157,3 +157,5 @@ export class AppService {
 
 
   // let node = context.tokenBefore(['(', 'Identifier']);
+
+  // EditorView.theme({}, {dark: true})
