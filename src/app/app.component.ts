@@ -1,27 +1,14 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { basicSetup } from '@codemirror/basic-setup';
-import { EditorView } from "@codemirror/view";
-import { EditorState, StateEffect, Compartment } from "@codemirror/state";
-import { keymap, highlightActiveLine, ViewUpdate } from '@codemirror/view';
+import { EditorState, StateEffect } from "@codemirror/state";
+import { EditorView, keymap, highlightActiveLine, ViewUpdate, lineNumbers, GutterMarker, gutter, highlightActiveLineGutter } from '@codemirror/view';
 import { sql, keywordCompletion, StandardSQL, schemaCompletion } from '@codemirror/lang-sql';
-import { indentWithTab } from '@codemirror/commands';
-import { startCompletion, acceptCompletion, autocompletion, closeCompletion } from '@codemirror/autocomplete';
+import { indentWithTab, history, undo, redo, toggleComment } from '@codemirror/commands';
+import { startCompletion, acceptCompletion, autocompletion, closeCompletion, closeBrackets, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 
-import { lineNumbers, GutterMarker } from '@codemirror/gutter';
-import { history, undo, redo } from '@codemirror/history';
-import { foldGutter } from '@codemirror/fold';
-import { syntaxTree, indentOnInput } from '@codemirror/language';
-import { defaultHighlightStyle } from '@codemirror/highlight';
-import { bracketMatching } from '@codemirror/matchbrackets';
-import { closeBrackets } from '@codemirror/closebrackets';
-import { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
-import { gutter, highlightActiveLineGutter } from '@codemirror/gutter';
+import { syntaxTree, indentOnInput, foldGutter,syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language';
 import { ICompletion, ISelection, query1, query2, queryVars } from './queries';
 
-
-
-import { toggleComment } from '@codemirror/comment';
-import { lastValueFrom, map } from 'rxjs';
 import { AppService } from './app.service';
 
 const WORDS = ['SELECT', 'SET', 'UPDATE', 'ALTER', 'DROP', 'FROM', 'DATABASE', 'TABLE', 'VIEW', 'WHERE', 'JOIN', 'GROUP', 'ORDER', 'BY', 'ASC', 'DISTINCT', 'DESC', 'HAVING', 'COUNT', 'NULL', 'LIKE', 'LIMIT'];
@@ -128,7 +115,7 @@ export class AppComponent implements AfterViewInit {
     const self = this;
     this.view = new EditorView({
       state: EditorState.create({
-        doc: '',//query1,
+        doc: query1,
         extensions: [
           // basicSetup,
           lineNumbers(),
@@ -137,8 +124,7 @@ export class AppComponent implements AfterViewInit {
 
           indentOnInput(),
 
-          defaultHighlightStyle.extension,
-
+          syntaxHighlighting(defaultHighlightStyle),
           bracketMatching(),
           closeBrackets(),
           //
@@ -227,11 +213,10 @@ export class AppComponent implements AfterViewInit {
 
     if (main.from < main.to) {
       syntaxTree(view.state).iterate({
-        enter(type, from_, to_, get_) {
-          // console.log(from_, to_, type, get_());
-          if (type.name === 'Statement') {
-            const from = main.from <= from_ ? from_ : main.from;
-            const to = main.to >= to_ ? to_ : main.to;
+        enter(node) {
+          if (node.type.name === 'Statement') {
+            const from = main.from <= node.from ? node.from : main.from;
+            const to = main.to >= node.to ? node.to : main.to;
             if (from < to) {
               self.selection.push({ from, to });
             }
